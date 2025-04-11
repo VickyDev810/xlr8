@@ -1,19 +1,85 @@
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { FiMenu, FiX, FiSun, FiMoon, FiSearch } from 'react-icons/fi';
 import { useTheme } from '../../context/ThemeContext';
+import { investorApi, startupApi } from '../../api/supabaseApi';
+import { Investor } from '../../lib/supabase';
+import { Startup } from '../../lib/supabase';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{investors: Investor[], startups: Startup[]}>({
+    investors: [],
+    startups: []
+  });
+  const [showResults, setShowResults] = useState(false);
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const searchRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Implement your search logic here
-    console.log('Searching for:', searchQuery);
+  useEffect(() => {
+    // Handle clicks outside of search results
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const searchData = async () => {
+      if (searchQuery.length < 2) {
+        setSearchResults({ investors: [], startups: [] });
+        setShowResults(false);
+        return;
+      }
+
+      try {
+        // Fetch investors and startups
+        const investors = await investorApi.getAll();
+        const startups = await startupApi.getAll();
+
+        // Filter based on search query
+        const filteredInvestors = investors.filter(investor => 
+          investor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (investor.profile && investor.profile.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+
+        const filteredStartups = startups.filter(startup => 
+          startup.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (startup.description && startup.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+
+        setSearchResults({
+          investors: filteredInvestors.slice(0, 5), // Limit results to 5
+          startups: filteredStartups.slice(0, 5)
+        });
+        
+        setShowResults(true);
+      } catch (error) {
+        console.error('Error searching data:', error);
+      }
+    };
+
+    const debounce = setTimeout(() => {
+      searchData();
+    }, 300);
+
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
+
+  const handleSearchItemClick = (type: 'investor' | 'startup', id: number) => {
+    setShowResults(false);
+    setSearchQuery('');
+    navigate(type === 'investor' ? `/investor/${id}` : `/startup/${id}`);
   };
 
   return (
@@ -25,7 +91,7 @@ const Navbar = () => {
         </Link>
 
         {/* Search Bar - Desktop */}
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl mx-8">
+        <div className="hidden md:flex flex-1 max-w-xl mx-8 relative" ref={searchRef}>
           <div className="relative w-full">
             <input
               type="text"
@@ -40,7 +106,62 @@ const Navbar = () => {
             />
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           </div>
-        </form>
+
+          {/* Search Results Dropdown */}
+          {showResults && (searchResults.investors.length > 0 || searchResults.startups.length > 0) && (
+            <div className={`absolute top-full left-0 right-0 mt-1 rounded-lg shadow-lg overflow-hidden z-50 ${
+              isDarkMode ? 'bg-dark-secondary border border-gray-700' : 'bg-white border border-gray-200'
+            }`}>
+              {searchResults.investors.length > 0 && (
+                <div>
+                  <div className={`px-4 py-2 text-xs font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Investors
+                  </div>
+                  {searchResults.investors.map(investor => (
+                    <div 
+                      key={`investor-${investor.id}`}
+                      className={`px-4 py-2 cursor-pointer ${
+                        isDarkMode 
+                          ? 'hover:bg-gray-700 text-gray-200' 
+                          : 'hover:bg-gray-100 text-gray-800'
+                      }`}
+                      onClick={() => handleSearchItemClick('investor', investor.id)}
+                    >
+                      <div className="font-medium">{investor.name}</div>
+                      <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {investor.profile?.substring(0, 60)}...
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {searchResults.startups.length > 0 && (
+                <div>
+                  <div className={`px-4 py-2 text-xs font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Companies
+                  </div>
+                  {searchResults.startups.map(startup => (
+                    <div 
+                      key={`startup-${startup.id}`}
+                      className={`px-4 py-2 cursor-pointer ${
+                        isDarkMode 
+                          ? 'hover:bg-gray-700 text-gray-200' 
+                          : 'hover:bg-gray-100 text-gray-800'
+                      }`}
+                      onClick={() => handleSearchItemClick('startup', startup.id)}
+                    >
+                      <div className="font-medium">{startup.name}</div>
+                      <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {startup.description?.substring(0, 60)}...
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center space-x-8">
@@ -84,7 +205,7 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className={`md:hidden px-4 pt-2 pb-4 space-y-3 ${isDarkMode ? 'bg-dark-bg' : 'bg-white'}`}>
           {/* Search Bar - Mobile */}
-          <form onSubmit={handleSearch} className="pb-2">
+          <div className="pb-2 relative" ref={searchRef}>
             <div className="relative">
               <input
                 type="text"
@@ -99,7 +220,68 @@ const Navbar = () => {
               />
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             </div>
-          </form>
+
+            {/* Mobile Search Results */}
+            {showResults && (searchResults.investors.length > 0 || searchResults.startups.length > 0) && (
+              <div className={`absolute top-full left-0 right-0 mt-1 rounded-lg shadow-lg overflow-hidden z-50 ${
+                isDarkMode ? 'bg-dark-secondary border border-gray-700' : 'bg-white border border-gray-200'
+              }`}>
+                {searchResults.investors.length > 0 && (
+                  <div>
+                    <div className={`px-4 py-2 text-xs font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Investors
+                    </div>
+                    {searchResults.investors.map(investor => (
+                      <div 
+                        key={`mobile-investor-${investor.id}`}
+                        className={`px-4 py-2 cursor-pointer ${
+                          isDarkMode 
+                            ? 'hover:bg-gray-700 text-gray-200' 
+                            : 'hover:bg-gray-100 text-gray-800'
+                        }`}
+                        onClick={() => {
+                          handleSearchItemClick('investor', investor.id);
+                          toggleMenu();
+                        }}
+                      >
+                        <div className="font-medium">{investor.name}</div>
+                        <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {investor.profile?.substring(0, 60)}...
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchResults.startups.length > 0 && (
+                  <div>
+                    <div className={`px-4 py-2 text-xs font-semibold ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Companies
+                    </div>
+                    {searchResults.startups.map(startup => (
+                      <div 
+                        key={`mobile-startup-${startup.id}`}
+                        className={`px-4 py-2 cursor-pointer ${
+                          isDarkMode 
+                            ? 'hover:bg-gray-700 text-gray-200' 
+                            : 'hover:bg-gray-100 text-gray-800'
+                        }`}
+                        onClick={() => {
+                          handleSearchItemClick('startup', startup.id);
+                          toggleMenu();
+                        }}
+                      >
+                        <div className="font-medium">{startup.name}</div>
+                        <div className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {startup.description?.substring(0, 60)}...
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <Link 
             to="/" 
