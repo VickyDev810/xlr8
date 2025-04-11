@@ -15,6 +15,7 @@ const InvestorProfiles = lazy(() => import('./pages/InvestorProfiles'));
 const TrendsInsights = lazy(() => import('./pages/TrendsInsights'));
 const StartupProfile = lazy(() => import('./pages/StartupProfile'));
 const InvestorProfile = lazy(() => import('./pages/InvestorProfile'));
+const Startups = lazy(() => import('./pages/Startups'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // AppContent component to use the theme context
@@ -38,6 +39,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/investors" element={<InvestorProfiles />} />
+            <Route path="/startups" element={<Startups />} />
             <Route path="/trends" element={<TrendsInsights />} />
             <Route path="/startup/:id" element={<StartupProfile />} />
             <Route path="/investor/:id" element={<InvestorProfile />} />

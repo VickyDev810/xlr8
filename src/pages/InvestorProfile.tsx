@@ -316,12 +316,11 @@ const InvestorProfile = () => {
                 <tr key={investment.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link to={`/startup/${investment.id}`} className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden flex items-center justify-center">
                         {investment.logo ? (
-                          <img 
-                            src={investment.logo} 
-                            alt={`${investment.startup} logo`}
-                            className="h-full w-full object-cover"
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: investment.logo }} 
+                            className="text-gray-700"
                           />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center bg-primary bg-opacity-10 text-primary font-bold text-xl">

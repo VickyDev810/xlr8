@@ -1,45 +1,54 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { investorApi } from '../api/supabaseApi';
-import { Investor } from '../lib/supabase';
-import { FiArrowUp, FiArrowDown, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { startupApi } from '../api/supabaseApi';
+import { Startup } from '../lib/supabase';
+import { FiArrowUp, FiArrowDown, FiChevronLeft, FiChevronRight, FiMapPin, FiTag } from 'react-icons/fi';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useTheme } from '../context/ThemeContext';
 
-const InvestorProfiles = () => {
+const Startups = () => {
   const [loading, setLoading] = useState(true);
-  const [investors, setInvestors] = useState<Investor[]>([]);
-  const [totalInvestors, setTotalInvestors] = useState(0);
+  const [startups, setStartups] = useState<Startup[]>([]);
+  const [totalStartups, setTotalStartups] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState<keyof Investor>('total_investments');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<keyof Startup>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const { isDarkMode } = useTheme();
   const itemsPerPage = 10;
 
   useEffect(() => {
-    const fetchInvestors = async () => {
+    const fetchStartups = async () => {
       try {
         setLoading(true);
-        const response = await investorApi.getAll(currentPage, itemsPerPage);
-        setInvestors(response.data);
-        setTotalInvestors(response.total);
+        
+        // If industry filter is applied, use the filtered API
+        if (selectedIndustry) {
+          const response = await startupApi.getByIndustry(selectedIndustry, currentPage, itemsPerPage);
+          setStartups(response.data);
+          setTotalStartups(response.total);
+        } else {
+          const response = await startupApi.getAll(currentPage, itemsPerPage);
+          setStartups(response.data);
+          setTotalStartups(response.total);
+        }
       } catch (error) {
-        console.error('Failed to fetch investors:', error);
+        console.error('Failed to fetch startups:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchInvestors();
-  }, [currentPage]);
+    fetchStartups();
+  }, [currentPage, selectedIndustry]);
 
   // Handle sort toggling
-  const handleSort = (field: keyof Investor) => {
+  const handleSort = (field: keyof Startup) => {
     if (field === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection('desc');
+      setSortDirection('asc');
     }
   };
 
@@ -48,51 +57,44 @@ const InvestorProfiles = () => {
     setCurrentPage(page);
   };
 
-  // Calculate total pages
-  const totalPages = Math.ceil(totalInvestors / itemsPerPage);
-
-  // Sort investors
-  const sortedInvestors = [...investors]
-    .sort((a, b) => {
-      if (sortField === 'total_investments') {
-        return sortDirection === 'asc' 
-          ? a.total_investments - b.total_investments
-          : b.total_investments - a.total_investments;
-      }
-      
-      // Sort by name as string
-      const aValue = String(a[sortField]).toLowerCase();
-      const bValue = String(b[sortField]).toLowerCase();
-      
-      if (sortDirection === 'asc') {
-        return aValue.localeCompare(bValue);
-      } else {
-        return bValue.localeCompare(aValue);
-      }
-    });
-
-  // Format currency
-  const formatCurrency = (amount: number): string => {
-    if (amount >= 1000000000) {
-      return `$${(amount / 1000000000).toFixed(1)}B`;
-    } else if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(1)}M`;
-    } else if (amount >= 1000) {
-      return `$${(amount / 1000).toFixed(1)}K`;
-    } else {
-      return `$${amount}`;
-    }
+  // Handle industry filter
+  const handleIndustryFilter = (industry: string | null) => {
+    setSelectedIndustry(industry);
+    setCurrentPage(1); // Reset to page 1 when filter changes
   };
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalStartups / itemsPerPage);
+
+  // Get unique industries from startups
+  const industries = [...new Set(startups.map(startup => startup.industry))];
+
+  // Sort startups
+  const sortedStartups = [...startups]
+    .sort((a, b) => {
+      if (sortField === 'name' || sortField === 'industry' || sortField === 'location') {
+        const aValue = String(a[sortField]).toLowerCase();
+        const bValue = String(b[sortField]).toLowerCase();
+        
+        if (sortDirection === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      }
+      
+      return 0;
+    });
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <div>
-          <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Investor Profiles</h1>
-          <p className="text-gray-600 dark:text-gray-400">Explore investment firms and their portfolios</p>
+          <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Companies</h1>
+          <p className="text-gray-600 dark:text-gray-400">Explore startups across industries</p>
         </div>
         
-        {/* Sorting controls moved to top */}
+        {/* Sorting controls */}
         <div className="mt-4 md:mt-0">
           <div className={`flex items-center space-x-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             <span className="text-sm">Sort by:</span>
@@ -112,19 +114,49 @@ const InvestorProfiles = () => {
             </button>
             
             <button
-              onClick={() => handleSort('total_investments')}
+              onClick={() => handleSort('industry')}
               className={`text-sm flex items-center space-x-1 ${
-                sortField === 'total_investments' 
+                sortField === 'industry' 
                   ? 'text-primary font-medium' 
                   : isDarkMode ? 'text-gray-300' : 'text-gray-600'
               }`}
             >
-              <span>Total Investment</span>
-              {sortField === 'total_investments' && (
+              <span>Industry</span>
+              {sortField === 'industry' && (
                 sortDirection === 'asc' ? <FiArrowUp size={14} /> : <FiArrowDown size={14} />
               )}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Industry Filter */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => handleIndustryFilter(null)}
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+              selectedIndustry === null
+                ? 'bg-primary text-white'
+                : isDarkMode ? 'bg-dark-secondary text-gray-300' : 'bg-gray-100 text-gray-800'
+            }`}
+          >
+            All Industries
+          </button>
+          
+          {industries.map((industry) => (
+            <button
+              key={industry}
+              onClick={() => handleIndustryFilter(industry)}
+              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+                selectedIndustry === industry
+                  ? 'bg-primary text-white'
+                  : isDarkMode ? 'bg-dark-secondary text-gray-300' : 'bg-gray-100 text-gray-800'
+              }`}
+            >
+              {industry}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -133,62 +165,59 @@ const InvestorProfiles = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedInvestors.length > 0 ? (
-              sortedInvestors.map((investor) => (
+            {sortedStartups.length > 0 ? (
+              sortedStartups.map((startup) => (
                 <Link
-                  key={investor.id}
-                  to={`/investor/${investor.id}`}
+                  key={startup.id}
+                  to={`/startup/${startup.id}`}
                   className={`${isDarkMode ? 'bg-dark-secondary hover:bg-dark-secondary/80' : 'bg-white hover:shadow-lg'} rounded-lg shadow-md overflow-hidden transition-shadow`}
                 >
                   <div className="p-6">
-                    <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white hover:text-primary' : 'text-gray-800 hover:text-primary'} transition-colors`}>
-                      {investor.name}
-                    </h3>
-                    
-                    <div className="mt-4 flex justify-between items-center">
-                      <div>
-                        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Investments</span>
-                        <p className={`text-lg font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                          {formatCurrency(investor.total_investments)}
-                        </p>
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-md overflow-hidden mr-4 flex items-center justify-center">
+                        {startup.logo ? (
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: startup.logo }} 
+                            className="text-gray-700 dark:text-gray-300"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-primary bg-opacity-10 text-primary font-bold text-xl">
+                            {startup.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
                       </div>
                       
-                      <div className="text-sm text-gray-500">
-                        <span className={`text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'} px-2 py-1 rounded`}>
-                          {investor.notable_investments?.length || 0} Notable Investments
-                        </span>
+                      <div>
+                        <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white hover:text-primary' : 'text-gray-800 hover:text-primary'} transition-colors`}>
+                          {startup.name}
+                        </h3>
+                        
+                        <div className="flex flex-wrap items-center text-xs text-gray-500 dark:text-gray-400 space-x-2 mt-1">
+                          <div className="flex items-center">
+                            <FiTag size={12} className="mr-1" />
+                            <span>{startup.industry}</span>
+                          </div>
+                          {startup.location && (
+                            <div className="flex items-center">
+                              <FiMapPin size={12} className="mr-1" />
+                              <span>{startup.location}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
                     <div className="mt-4">
                       <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} line-clamp-3`}>
-                        {investor.profile || 'No profile information available.'}
+                        {startup.description}
                       </p>
                     </div>
-                    
-                    {investor.notable_investments && investor.notable_investments.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-2`}>NOTABLE INVESTMENTS</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {investor.notable_investments.slice(0, 3).map((investment, idx) => (
-                            <span key={idx} className="text-xs bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-full">
-                              {investment}
-                            </span>
-                          ))}
-                          {investor.notable_investments.length > 3 && (
-                            <span className={`text-xs ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'} px-2 py-1 rounded-full`}>
-                              +{investor.notable_investments.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </Link>
               ))
             ) : (
               <div className="col-span-3 py-10 text-center text-gray-500 dark:text-gray-400">
-                No investors found.
+                No startups found.
               </div>
             )}
           </div>
@@ -259,4 +288,4 @@ const InvestorProfiles = () => {
   );
 };
 
-export default InvestorProfiles; 
+export default Startups; 

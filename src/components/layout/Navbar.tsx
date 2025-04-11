@@ -44,16 +44,16 @@ const Navbar = () => {
 
       try {
         // Fetch investors and startups
-        const investors = await investorApi.getAll();
-        const startups = await startupApi.getAll();
+        const investorsResponse = await investorApi.getAll();
+        const startupsResponse = await startupApi.getAll();
 
         // Filter based on search query
-        const filteredInvestors = investors.filter(investor => 
+        const filteredInvestors = investorsResponse.data.filter((investor: Investor) => 
           investor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (investor.profile && investor.profile.toLowerCase().includes(searchQuery.toLowerCase()))
         );
 
-        const filteredStartups = startups.filter(startup => 
+        const filteredStartups = startupsResponse.data.filter((startup: Startup) => 
           startup.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (startup.description && startup.description.toLowerCase().includes(searchQuery.toLowerCase()))
         );
@@ -80,6 +80,21 @@ const Navbar = () => {
     setShowResults(false);
     setSearchQuery('');
     navigate(type === 'investor' ? `/investor/${id}` : `/startup/${id}`);
+  };
+
+  // Desktop menu links
+  const NavLink = ({ to, onClick, children }: { to: string; onClick?: () => void; children: React.ReactNode }) => {
+    const { isDarkMode } = useTheme();
+    
+    return (
+      <Link 
+        to={to} 
+        onClick={onClick}
+        className={`hover:text-primary transition-colors ${isDarkMode ? 'text-gray-300 hover:text-white' : ''}`}
+      >
+        {children}
+      </Link>
+    );
   };
 
   return (
@@ -165,15 +180,18 @@ const Navbar = () => {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center space-x-8">
-          <Link to="/" className={`hover:text-primary transition-colors ${isDarkMode ? 'text-gray-300 hover:text-white' : ''}`}>
+          <NavLink to="/" onClick={toggleMenu}>
             Dashboard
-          </Link>
-          <Link to="/investors" className={`hover:text-primary transition-colors ${isDarkMode ? 'text-gray-300 hover:text-white' : ''}`}>
+          </NavLink>
+          <NavLink to="/investors" onClick={toggleMenu}>
             Investors
-          </Link>
-          <Link to="/trends" className={`hover:text-primary transition-colors ${isDarkMode ? 'text-gray-300 hover:text-white' : ''}`}>
+          </NavLink>
+          <NavLink to="/startups" onClick={toggleMenu}>
+            Companies
+          </NavLink>
+          <NavLink to="/trends" onClick={toggleMenu}>
             Trends
-          </Link>
+          </NavLink>
           
           {/* Dark mode toggle */}
           <button 
@@ -283,33 +301,18 @@ const Navbar = () => {
             )}
           </div>
 
-          <Link 
-            to="/" 
-            className={`block py-2 px-4 ${
-              isDarkMode ? 'text-gray-300 hover:bg-dark-secondary' : 'text-gray-700 hover:bg-gray-100'
-            } rounded transition-colors`}
-            onClick={toggleMenu}
-          >
+          <NavLink to="/" onClick={toggleMenu}>
             Dashboard
-          </Link>
-          <Link 
-            to="/investors" 
-            className={`block py-2 px-4 ${
-              isDarkMode ? 'text-gray-300 hover:bg-dark-secondary' : 'text-gray-700 hover:bg-gray-100'
-            } rounded transition-colors`}
-            onClick={toggleMenu}
-          >
+          </NavLink>
+          <NavLink to="/investors" onClick={toggleMenu}>
             Investors
-          </Link>
-          <Link 
-            to="/trends" 
-            className={`block py-2 px-4 ${
-              isDarkMode ? 'text-gray-300 hover:bg-dark-secondary' : 'text-gray-700 hover:bg-gray-100'
-            } rounded transition-colors`}
-            onClick={toggleMenu}
-          >
+          </NavLink>
+          <NavLink to="/startups" onClick={toggleMenu}>
+            Companies
+          </NavLink>
+          <NavLink to="/trends" onClick={toggleMenu}>
             Trends
-          </Link>
+          </NavLink>
           
           {/* Dark mode toggle in mobile menu */}
           <button 

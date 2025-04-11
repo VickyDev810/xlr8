@@ -118,12 +118,11 @@ const StartupProfile = () => {
       {/* Startup header */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <div className="flex flex-col md:flex-row items-start md:items-center">
-          <div className="flex-shrink-0 h-20 w-20 bg-gray-200 rounded-lg overflow-hidden mr-6 mb-4 md:mb-0">
+          <div className="flex-shrink-0 h-20 w-20 bg-gray-200 rounded-lg overflow-hidden mr-6 mb-4 md:mb-0 flex items-center justify-center">
             {startup.logo ? (
-              <img 
-                src={startup.logo} 
-                alt={`${startup.name} logo`} 
-                className="h-full w-full object-cover"
+              <div 
+                dangerouslySetInnerHTML={{ __html: startup.logo }} 
+                className="text-gray-700"
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center bg-primary bg-opacity-10 text-primary font-bold text-xl">
