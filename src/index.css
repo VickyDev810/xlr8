@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply min-h-screen font-sans;
+  }
+
+  .dark body {
+    @apply bg-dark-bg text-dark-text;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-md overflow-hidden transition-colors duration-200;
+  }
+
+  .dark .card {
+    @apply bg-dark-secondary text-dark-text;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Dark mode input styles */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="search"],
+  .dark input[type="number"],
+  .dark textarea,
+  .dark select {
+    @apply bg-dark-secondary border-gray-600 text-white placeholder-gray-400;
+  }
+
+  /* Dark mode button styles */
+  .dark .btn-primary {
+    @apply bg-indigo-500 hover:bg-indigo-600;
+  }
+
+  .dark .btn-secondary {
+    @apply bg-orange-400 hover:bg-orange-500;
+  }
+}
