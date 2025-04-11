@@ -79,8 +79,8 @@ const InvestorProfiles = () => {
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Investor Profiles</h1>
-          <p className="text-gray-600">Explore investment firms and their portfolios</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Investor Profiles</h1>
+          <p className="text-gray-600 dark:text-gray-400">Explore investment firms and their portfolios</p>
         </div>
         
         {/* Search */}

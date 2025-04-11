@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { trendApi, advancedQueries } from '../api/supabaseApi';
 import { FiDownload, FiCalendar } from 'react-icons/fi';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { useTheme } from '../context/ThemeContext';
+import { FundingRound, Startup } from '../lib/supabase';
+import { exportToPDF } from '../utils/pdfExport';
 import {
   BarChart,
   Bar,
@@ -71,6 +74,7 @@ const TrendsInsights = () => {
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('yearly');
   const [predictiveInsights, setPredictiveInsights] = useState(false);
+  const { isDarkMode } = useTheme();
   
   useEffect(() => {
     // Simulate data loading
@@ -107,8 +111,8 @@ const TrendsInsights = () => {
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Trends & Insights</h1>
-          <p className="text-gray-600">Analyze funding patterns and market trends</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Trends & Insights</h1>
+          <p className="text-gray-600 dark:text-gray-400">Analyze funding patterns and market trends</p>
         </div>
         
         <div className="flex mt-4 md:mt-0 space-x-3">
@@ -117,29 +121,61 @@ const TrendsInsights = () => {
             <select
               value={timeframe}
               onChange={(e) => setTimeframe(e.target.value)}
-              className="block appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              className="block appearance-none bg-white dark:bg-dark-bg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="monthly">Last 30 Days</option>
               <option value="quarterly">Last Quarter</option>
               <option value="yearly">Last Year</option>
               <option value="5year">Last 5 Years</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
               <FiCalendar />
             </div>
           </div>
           
           <button 
             onClick={togglePredictiveInsights}
-            className={`${
-              predictiveInsights ? 'bg-primary text-white' : 'bg-white text-gray-700 border border-gray-300'
-            } px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors`}
+            className={`px-4 py-2 rounded-md transition-colors ${
+              predictiveInsights 
+                ? 'bg-[#4e46dc] text-white ring-2 ring-primary ring-opacity-50 hover:bg-indigo-600' 
+                : 'bg-white dark:bg-dark-bg text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
           >
             AI Predictions
           </button>
           
           <button 
-            onClick={() => alert('Export functionality would be implemented here')}
+            onClick={() => {
+              const data = mockMonthlyFunding.map((item, index) => ({
+                id: index + 1,
+                startup_id: index + 1,
+                round_type: 'Monthly',
+                amount: item.amount * 1000000, // Convert to actual amount
+                date: new Date(2024, mockMonthlyFunding.indexOf(item), 1).toISOString(),
+                lead_investors: [],
+                startup: {
+                  id: index + 1,
+                  name: `${item.month} 2024`,
+                  industry: 'Overall Market',
+                  location: 'Global',
+                  founded_year: 2024,
+                  total_funding: item.amount * 1000000,
+                  employee_count: 0,
+                  logo: '',
+                  website: '',
+                  description: '',
+                  social_links: {},
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                }
+              } as FundingRound & { startup?: Startup }));
+              
+              exportToPDF(data, {
+                title: 'Funding Trends Report',
+                subtitle: `${timeframe} Analysis`,
+                filters: predictiveInsights ? { roundTypes: ['AI Predictions Enabled'] } : undefined,
+              });
+            }}
             className="btn-primary flex items-center"
           >
             <FiDownload className="mr-2" />
@@ -153,19 +189,30 @@ const TrendsInsights = () => {
       ) : (
         <div className="space-y-8">
           {/* Industry Funding Distribution */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Funding by Industry</h2>
+          <div className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Funding by Industry</h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={mockIndustryFunding}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis tickFormatter={formatCurrency} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke={isDarkMode ? '#9ca3af' : '#4b5563'}
+                  />
+                  <YAxis 
+                    tickFormatter={formatCurrency}
+                    stroke={isDarkMode ? '#9ca3af' : '#4b5563'}
+                  />
                   <Tooltip 
                     formatter={(value) => [`${formatCurrency(value as number)}`, 'Funding']}
+                    contentStyle={{
+                      backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                      borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                      color: isDarkMode ? '#ffffff' : '#000000'
+                    }}
                   />
                   <Legend />
                   <Bar dataKey="value" name="Total Funding" radius={[4, 4, 0, 0]}>
@@ -180,8 +227,8 @@ const TrendsInsights = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Monthly Funding Trends */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Monthly Funding Trends</h2>
+            <div className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Monthly Funding Trends</h2>
               <div className="h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
@@ -194,10 +241,23 @@ const TrendsInsights = () => {
                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => `$${value}M`} />
-                    <Tooltip formatter={(value) => [`$${value}M`, 'Funding']} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke={isDarkMode ? '#9ca3af' : '#4b5563'}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => `$${value}M`}
+                      stroke={isDarkMode ? '#9ca3af' : '#4b5563'}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [`$${value}M`, 'Funding']}
+                      contentStyle={{
+                        backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                        borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                        color: isDarkMode ? '#ffffff' : '#000000'
+                      }}
+                    />
                     <Area 
                       type="monotone" 
                       dataKey="amount" 
@@ -222,8 +282,8 @@ const TrendsInsights = () => {
             </div>
             
             {/* Regional Distribution */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Regional Distribution</h2>
+            <div className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Regional Distribution</h2>
               <div className="h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -241,27 +301,59 @@ const TrendsInsights = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value}%`, 'Share']} />
-                    <Legend />
+                    <Tooltip 
+                      formatter={(value) => [`${value}%`, 'Share']}
+                      contentStyle={{
+                        backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                        borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                        color: isDarkMode ? '#ffffff' : '#000000'
+                      }}
+                    />
+                    <Legend 
+                      formatter={(value) => (
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          {value}
+                        </span>
+                      )}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
             
             {/* Round Type Analysis */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Funding by Round Type</h2>
+            <div className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Funding by Round Type</h2>
               <div className="h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={mockRoundTypeFunding}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="type" />
-                    <YAxis yAxisId="left" orientation="left" tickFormatter={(value) => `$${value}M`} />
-                    <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => `${value}`} />
-                    <Tooltip />
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                    <XAxis 
+                      dataKey="type" 
+                      stroke={isDarkMode ? '#9ca3af' : '#4b5563'}
+                    />
+                    <YAxis 
+                      yAxisId="left" 
+                      orientation="left" 
+                      tickFormatter={(value) => `$${value}M`}
+                      stroke={isDarkMode ? '#9ca3af' : '#4b5563'}
+                    />
+                    <YAxis 
+                      yAxisId="right" 
+                      orientation="right" 
+                      tickFormatter={(value) => `${value}`}
+                      stroke={isDarkMode ? '#9ca3af' : '#4b5563'}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                        borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                        color: isDarkMode ? '#ffffff' : '#000000'
+                      }}
+                    />
                     <Legend />
                     <Bar yAxisId="left" dataKey="amount" name="Average Amount" fill="#6366f1" radius={[4, 4, 0, 0]} />
                     <Bar yAxisId="right" dataKey="count" name="Number of Deals" fill="#f97316" radius={[4, 4, 0, 0]} />
@@ -272,22 +364,22 @@ const TrendsInsights = () => {
             
             {/* AI Insights */}
             {predictiveInsights && (
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">AI-Powered Predictions</h2>
+              <div className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">AI-Powered Predictions</h2>
                 <div className="space-y-4">
                   <div className="p-4 bg-primary bg-opacity-5 rounded-md border border-primary border-opacity-20">
                     <h3 className="font-medium text-primary">Expected Industry Growth</h3>
-                    <p className="text-gray-700 mt-2">AI/ML and CleanTech sectors are projected to see 32% funding growth in the next quarter based on current trends.</p>
+                    <p className="text-gray-700 dark:text-gray-300 mt-2">AI/ML and CleanTech sectors are projected to see 32% funding growth in the next quarter based on current trends.</p>
                   </div>
                   
                   <div className="p-4 bg-primary bg-opacity-5 rounded-md border border-primary border-opacity-20">
                     <h3 className="font-medium text-primary">Potential IPO Candidates</h3>
-                    <p className="text-gray-700 mt-2">5 late-stage startups in the SaaS sector show strong indicators of preparing for public offerings within 6-12 months.</p>
+                    <p className="text-gray-700 dark:text-gray-300 mt-2">5 late-stage startups in the SaaS sector show strong indicators of preparing for public offerings within 6-12 months.</p>
                   </div>
                   
                   <div className="p-4 bg-primary bg-opacity-5 rounded-md border border-primary border-opacity-20">
                     <h3 className="font-medium text-primary">Investment Pattern Shift</h3>
-                    <p className="text-gray-700 mt-2">Analysis suggests early-stage investment may increase by 18% as VCs adjust strategies toward emerging technologies.</p>
+                    <p className="text-gray-700 dark:text-gray-300 mt-2">Analysis suggests early-stage investment may increase by 18% as VCs adjust strategies toward emerging technologies.</p>
                   </div>
                 </div>
               </div>
@@ -295,30 +387,30 @@ const TrendsInsights = () => {
           </div>
           
           {/* Key Insights Summary */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Key Insights</h2>
+          <div className="bg-white dark:bg-dark-secondary p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Key Insights</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 bg-gray-50 rounded-md">
+              <div className="p-4 bg-gray-50 dark:bg-dark-secondary rounded-md">
                 <div className="text-2xl font-bold text-primary">$8.2B</div>
-                <div className="text-sm text-gray-600">Total Funding This Quarter</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Total Funding This Quarter</div>
                 <div className="text-xs text-green-600 mt-1">↑ 12% from previous</div>
               </div>
               
-              <div className="p-4 bg-gray-50 rounded-md">
+              <div className="p-4 bg-gray-50 dark:bg-dark-secondary rounded-md">
                 <div className="text-2xl font-bold text-primary">427</div>
-                <div className="text-sm text-gray-600">Number of Deals</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Number of Deals</div>
                 <div className="text-xs text-red-600 mt-1">↓ 3% from previous</div>
               </div>
               
-              <div className="p-4 bg-gray-50 rounded-md">
+              <div className="p-4 bg-gray-50 dark:bg-dark-secondary rounded-md">
                 <div className="text-2xl font-bold text-primary">$19.2M</div>
-                <div className="text-sm text-gray-600">Average Deal Size</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Average Deal Size</div>
                 <div className="text-xs text-green-600 mt-1">↑ 15% from previous</div>
               </div>
               
-              <div className="p-4 bg-gray-50 rounded-md">
+              <div className="p-4 bg-gray-50 dark:bg-dark-secondary rounded-md">
                 <div className="text-2xl font-bold text-primary">AI/ML</div>
-                <div className="text-sm text-gray-600">Hottest Sector</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Hottest Sector</div>
                 <div className="text-xs text-green-600 mt-1">↑ 32% funding growth</div>
               </div>
             </div>

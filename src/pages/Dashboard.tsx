@@ -4,6 +4,7 @@ import { fundingRoundApi, startupApi } from '../api/supabaseApi';
 import { FundingRound, Startup } from '../lib/supabase';
 import { FiFilter, FiDownload, FiRefreshCw } from 'react-icons/fi';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { exportToPDF } from '../utils/pdfExport';
 
 // Filter options
 const industries = ['Fintech', 'Healthtech', 'AI', 'SaaS', 'Consumer', 'EdTech', 'CleanTech'];
@@ -141,18 +142,26 @@ const Dashboard = () => {
     setMaxAmount(null);
   };
   
-  // Mock function for data export
+  // Export data to PDF
   const exportData = () => {
-    alert('Data export functionality would be implemented here');
-    // In a real app, generate CSV and download
+    exportToPDF(filteredRounds, {
+      title: 'Funding Rounds Report',
+      subtitle: 'Latest startup funding activity',
+      filters: {
+        industries: selectedIndustries,
+        roundTypes: selectedRoundTypes,
+        minAmount,
+        maxAmount,
+      },
+    });
   };
   
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Funding Rounds</h1>
-          <p className="text-gray-600">Latest startup funding activity</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Funding Rounds</h1>
+          <p className="text-gray-600 dark:text-gray-400">Latest startup funding activity</p>
         </div>
         
         <div className="flex mt-4 md:mt-0 space-x-3">
@@ -176,12 +185,12 @@ const Dashboard = () => {
       
       {/* Filters panel */}
       {showFilters && (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <div className="bg-white dark:bg-dark-secondary p-4 rounded-lg shadow-md mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-gray-800">Filter Options</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-white">Filter Options</h3>
             <button 
               onClick={resetFilters}
-              className="text-primary hover:text-indigo-700 text-sm flex items-center"
+              className="text-primary hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm flex items-center"
             >
               <FiRefreshCw className="mr-1" /> Reset
             </button>
@@ -190,7 +199,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Industry filter */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
                 Industry
               </label>
               <div className="flex flex-wrap gap-2">
@@ -198,11 +207,11 @@ const Dashboard = () => {
                   <button
                     key={industry}
                     onClick={() => toggleIndustry(industry)}
-                    className={`text-xs px-2 py-1 rounded-full ${
+                    className={`text-xs px-2 py-1 rounded-full transition-colors ${
                       selectedIndustries.includes(industry)
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    } transition-colors`}
+                        ? 'bg-primary text-black ring-2 ring-primary ring-opacity-50'
+                        : 'bg-gray-100 dark:bg-dark-bg text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
                   >
                     {industry}
                   </button>
@@ -212,7 +221,7 @@ const Dashboard = () => {
             
             {/* Round type filter */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
                 Round Type
               </label>
               <div className="flex flex-wrap gap-2">
@@ -220,11 +229,11 @@ const Dashboard = () => {
                   <button
                     key={roundType}
                     onClick={() => toggleRoundType(roundType)}
-                    className={`text-xs px-2 py-1 rounded-full ${
+                    className={`text-xs px-2 py-1 rounded-full transition-colors ${
                       selectedRoundTypes.includes(roundType)
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    } transition-colors`}
+                        ? 'bg-primary text-black ring-2 ring-primary ring-opacity-50'
+                        : 'bg-gray-100 dark:bg-dark-bg text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
                   >
                     {roundType}
                   </button>
@@ -234,7 +243,7 @@ const Dashboard = () => {
             
             {/* Amount range filter */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
                 Amount Range
               </label>
               <div className="flex items-center space-x-2">
@@ -243,15 +252,15 @@ const Dashboard = () => {
                   placeholder="Min ($)"
                   value={minAmount || ''}
                   onChange={e => setMinAmount(e.target.value ? Number(e.target.value) : null)}
-                  className="flex-1 p-2 border border-gray-300 rounded text-sm"
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-dark-bg dark:text-white"
                 />
-                <span className="text-gray-500">to</span>
+                <span className="text-gray-500 dark:text-gray-400">to</span>
                 <input
                   type="number"
                   placeholder="Max ($)"
                   value={maxAmount || ''}
                   onChange={e => setMaxAmount(e.target.value ? Number(e.target.value) : null)}
-                  className="flex-1 p-2 border border-gray-300 rounded text-sm"
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-dark-bg dark:text-white"
                 />
               </div>
             </div>
