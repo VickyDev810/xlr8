@@ -3,4 +3,6 @@ bs4
 webdriver-manager
 requests
 python-dotenv
-subprocess.run 
+subprocess.run
+fastapi
+uvicorn
