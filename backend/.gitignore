@@ -1,0 +1,7 @@
+test
+chrome-linux64
+chromedriver-linux64
+.env
+../.qodo/
+__pycache__
+backend/script_runner.py
